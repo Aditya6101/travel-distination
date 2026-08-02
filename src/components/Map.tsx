@@ -11,7 +11,28 @@ import {
 } from "react-leaflet";
 import type { Marker as LeafletMarker } from "leaflet";
 import L from "leaflet";
-import { MapPin, Bell, BellOff, Trash2, Navigation, Clock } from "lucide-react";
+import { MapPin, Bell, BellOff, Trash2, Navigation, Clock, Map as MapIcon } from "lucide-react";
+
+// Tile style config
+const TILE_STYLES = {
+  light: {
+    label: "Light",
+    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  },
+  dark: {
+    label: "Dark",
+    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  },
+  road: {
+    label: "Voyager",
+    url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  },
+} as const;
+
+type TileStyleKey = keyof typeof TILE_STYLES;
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -81,6 +102,7 @@ const Map = () => {
   const [isNearDestination, setIsNearDestination] = useState<boolean>(false);
   const [countdownSeconds, setCountdownSeconds] = useState<number>(0);
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState<boolean>(false);
+  const [tileStyle, setTileStyle] = useState<TileStyleKey>("light");
 
   const distanceOptions = [2, 3, 4, 5, 10, 20];
 
@@ -359,6 +381,29 @@ const Map = () => {
               )}
             </div>
           )}
+
+          {/* Map style switcher */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <MapIcon className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Map style</span>
+            </div>
+            <div className="flex rounded-md border border-input overflow-hidden">
+              {(Object.keys(TILE_STYLES) as TileStyleKey[]).map((key) => (
+                <button
+                  key={key}
+                  onClick={() => setTileStyle(key)}
+                  className={`flex-1 py-1.5 text-xs font-medium transition-colors ${
+                    tileStyle === key
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-transparent text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  }`}
+                >
+                  {TILE_STYLES[key].label}
+                </button>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -447,8 +492,8 @@ const Map = () => {
             style={{ height: "100%", width: "100%" }}
           >
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              url={TILE_STYLES[tileStyle].url}
+              attribution={TILE_STYLES[tileStyle].attribution}
             />
             <MapClickHandler onMapClick={handleMapClick} />
 
@@ -524,8 +569,8 @@ const Map = () => {
               style={{ height: "100%", width: "100%" }}
             >
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution={TILE_STYLES[tileStyle].attribution}
+                url={TILE_STYLES[tileStyle].url}
               />
               <MapClickHandler onMapClick={handleMapClick} />
 
