@@ -11,6 +11,19 @@ import {
 } from "react-leaflet";
 import type { Marker as LeafletMarker } from "leaflet";
 import L from "leaflet";
+import { MapPin, Bell, BellOff, Trash2, Navigation, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Custom icons
 const createCustomIcon = (color: string, iconType: "user" | "destination") => {
@@ -24,14 +37,13 @@ const createCustomIcon = (color: string, iconType: "user" | "destination") => {
         width: ${iconSize[0]}px;
         height: ${iconSize[1]}px;
         background: ${color};
-        border: 3px solid white;
+        border: 2px solid white;
         border-radius: 50%;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.25);
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
-        font-weight: bold;
         font-size: ${iconType === "user" ? "14px" : "12px"};
       ">
         ${iconType === "user" ? "📍" : "🎯"}
@@ -58,22 +70,17 @@ const MapClickHandler = ({
 
 const Map = () => {
   const ref1 = useRef<LeafletMarker | null>(null);
-  const [userPosition, setUserPosition] = useState<[number, number] | null>(
-    null
-  );
-  const [destinationPosition, setDestinationPosition] = useState<
-    [number, number] | null
-  >(null);
+  const [userPosition, setUserPosition] = useState<[number, number] | null>(null);
+  const [destinationPosition, setDestinationPosition] = useState<[number, number] | null>(null);
   const [distanceMeters, setDistanceMeters] = useState<number | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
-  const [selectedDistance, setSelectedDistance] = useState<number>(5); // Default 5km
-  const [notificationsEnabled, setNotificationsEnabled] =
-    useState<boolean>(true);
-  const [notificationInterval, setNotificationInterval] =
-    useState<NodeJS.Timeout | null>(null);
+  const [selectedDistance, setSelectedDistance] = useState<number>(5);
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
+  const [notificationInterval, setNotificationInterval] = useState<NodeJS.Timeout | null>(null);
   const [lastNotificationTime, setLastNotificationTime] = useState<number>(0);
   const [isNearDestination, setIsNearDestination] = useState<boolean>(false);
   const [countdownSeconds, setCountdownSeconds] = useState<number>(0);
+  const [isMobilePanelOpen, setIsMobilePanelOpen] = useState<boolean>(false);
 
   const distanceOptions = [2, 3, 4, 5, 10, 20];
 
@@ -111,34 +118,24 @@ const Map = () => {
     if (!userPosition || !destinationPosition) return;
 
     const user = L.latLng(userPosition[0], userPosition[1]);
-    const destination = L.latLng(
-      destinationPosition[0],
-      destinationPosition[1]
-    );
+    const destination = L.latLng(destinationPosition[0], destinationPosition[1]);
     const distance = user.distanceTo(destination);
     setDistanceMeters(distance);
 
     const isNear = distance <= selectedDistance * 1000;
     setIsNearDestination(isNear);
 
-    // Handle notifications
     if (notificationsEnabled && isNear) {
       const now = Date.now();
       const timeSinceLastNotification = now - lastNotificationTime;
-      const notificationInterval = isNear ? 30000 : 60000; // 30s if near, 1min if far
+      const notifInterval = isNear ? 30000 : 60000;
 
-      if (timeSinceLastNotification >= notificationInterval) {
+      if (timeSinceLastNotification >= notifInterval) {
         sendNotification();
         setLastNotificationTime(now);
       }
     }
-  }, [
-    userPosition,
-    destinationPosition,
-    selectedDistance,
-    notificationsEnabled,
-    lastNotificationTime,
-  ]);
+  }, [userPosition, destinationPosition, selectedDistance, notificationsEnabled, lastNotificationTime]);
 
   // Set up notification interval
   useEffect(() => {
@@ -153,10 +150,7 @@ const Map = () => {
     const interval = setInterval(() => {
       if (userPosition && destinationPosition) {
         const user = L.latLng(userPosition[0], userPosition[1]);
-        const destination = L.latLng(
-          destinationPosition[0],
-          destinationPosition[1]
-        );
+        const destination = L.latLng(destinationPosition[0], destinationPosition[1]);
         const distance = user.distanceTo(destination);
 
         if (distance <= selectedDistance * 1000) {
@@ -164,19 +158,14 @@ const Map = () => {
           setLastNotificationTime(Date.now());
         }
       }
-    }, 30000); // Check every 30 seconds
+    }, 30000);
 
     setNotificationInterval(interval);
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [
-    notificationsEnabled,
-    destinationPosition,
-    userPosition,
-    selectedDistance,
-  ]);
+  }, [notificationsEnabled, destinationPosition, userPosition, selectedDistance]);
 
   // Countdown timer effect
   useEffect(() => {
@@ -199,7 +188,7 @@ const Map = () => {
   const sendNotification = useCallback(() => {
     if ("Notification" in window && Notification.permission === "granted") {
       new Notification("Destination Alert!", {
-        body: `You&apos;re approaching your destination! You&apos;re within ${selectedDistance}km.`,
+        body: `You're approaching your destination! You're within ${selectedDistance}km.`,
         icon: "/globe.svg",
         tag: "destination-alert",
       });
@@ -217,273 +206,380 @@ const Map = () => {
     setLastNotificationTime(0);
   };
 
-  const toggleNotifications = () => {
-    setNotificationsEnabled(!notificationsEnabled);
+  const formatDistance = (meters: number) => {
+    if (meters >= 1000) {
+      return `${(meters / 1000).toFixed(2)} km`;
+    }
+    return `${Math.round(meters)} m`;
   };
 
-  const handleDistanceChange = (distance: number) => {
-    setSelectedDistance(distance);
-    setLastNotificationTime(0); // Reset notification timer when distance changes
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50">
+  // Sidebar content (shared between desktop and mobile)
+  const SidebarContent = () => (
+    <div className="flex flex-col gap-4 p-4 h-full overflow-y-auto">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200 px-4 py-3">
-        <h1 className="text-lg font-semibold text-gray-900 text-center">
-          🗺️ Travel Destination
-        </h1>
+      <div className="flex items-center gap-2">
+        <MapPin className="h-5 w-5 text-foreground" />
+        <span className="font-semibold text-base tracking-tight">Travel Destination</span>
       </div>
 
-      <div className="p-4 space-y-4">
-        {/* Error Display */}
-        {geoError && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <div className="text-red-800 text-sm font-medium">{geoError}</div>
-          </div>
-        )}
+      <Separator />
 
-        {/* Search Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <div className="space-y-3">
-            {/* Set on Map Button */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Set Destination
-              </label>
-              <div className="text-xs text-gray-500 mb-3">
-                Click anywhere on the map below to set your destination
-              </div>
-              <button
-                onClick={() => {
-                  // Scroll to map and show a brief message
-                  const mapElement =
-                    document.querySelector(".leaflet-container");
-                  if (mapElement) {
-                    mapElement.scrollIntoView({ behavior: "smooth" });
-                  }
-                }}
-                className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors"
-              >
-                🗺️ Set on Map
-              </button>
-            </div>
-
-            {/* Distance Threshold */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Distance Threshold
-              </label>
-              <select
-                value={selectedDistance}
-                onChange={(e) => handleDistanceChange(Number(e.target.value))}
-                className="w-full px-3 py-3 border-2 border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white text-gray-900"
-              >
-                {distanceOptions.map((distance) => (
-                  <option key={distance} value={distance}>
-                    {distance} km
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+      {/* Geo Error */}
+      {geoError && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {geoError}
         </div>
+      )}
 
-        {/* Control Buttons */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={toggleNotifications}
-              className={`px-4 py-3 rounded-lg font-medium text-sm transition-colors ${
-                notificationsEnabled
-                  ? "bg-green-600 hover:bg-green-700 text-white"
-                  : "bg-red-600 hover:bg-red-700 text-white"
-              }`}
+      {/* Status Card */}
+      <Card className="shadow-none">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Status
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4 space-y-3">
+          {/* Location status */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Navigation className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Your location</span>
+            </div>
+            {userPosition ? (
+              <Badge variant="secondary" className="text-xs font-normal">
+                {userPosition[0].toFixed(3)}, {userPosition[1].toFixed(3)}
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-xs font-normal text-muted-foreground">
+                Locating…
+              </Badge>
+            )}
+          </div>
+
+          {/* Destination status */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Destination</span>
+            </div>
+            {destinationPosition ? (
+              <Badge variant="secondary" className="text-xs font-normal">
+                {destinationPosition[0].toFixed(3)}, {destinationPosition[1].toFixed(3)}
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-xs font-normal text-muted-foreground">
+                Not set
+              </Badge>
+            )}
+          </div>
+
+          {/* Distance */}
+          {destinationPosition && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Distance</span>
+              {distanceMeters !== null ? (
+                <span className={`text-sm font-semibold ${isNearDestination ? "text-destructive" : "text-foreground"}`}>
+                  {formatDistance(distanceMeters)}
+                </span>
+              ) : (
+                <span className="text-sm text-muted-foreground">Calculating…</span>
+              )}
+            </div>
+          )}
+
+          {/* Near destination alert */}
+          {isNearDestination && (
+            <div className="rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive font-medium">
+              🎯 Within {selectedDistance}km of destination
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Controls Card */}
+      <Card className="shadow-none">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Controls
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4 space-y-4">
+          {/* Distance threshold */}
+          <div className="space-y-1.5">
+            <label className="text-sm text-muted-foreground">Alert radius</label>
+            <Select
+              value={String(selectedDistance)}
+              onValueChange={(val) => {
+                setSelectedDistance(Number(val));
+                setLastNotificationTime(0);
+              }}
             >
-              {notificationsEnabled ? "🔔 ON" : "🔕 OFF"}
-            </button>
-
-            {destinationPosition && (
-              <button
-                onClick={resetDestination}
-                className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium text-sm transition-colors"
-              >
-                🗑️ Reset
-              </button>
-            )}
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {distanceOptions.map((d) => (
+                  <SelectItem key={d} value={String(d)}>
+                    {d} km
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* I'm up button - full width */}
-          {destinationPosition &&
-            notificationsEnabled &&
-            countdownSeconds === 0 && (
-              <button
-                onClick={() => {
-                  setLastNotificationTime(Date.now() + 300000);
-                }}
-                className="w-full mt-3 px-4 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium text-sm transition-colors"
-              >
-                ⏸️ I&apos;m up (5 min)
-              </button>
-            )}
-
-          {destinationPosition &&
-            notificationsEnabled &&
-            countdownSeconds > 0 && (
-              <button
-                disabled
-                className="w-full mt-3 px-4 py-3 bg-yellow-400 text-white rounded-lg font-medium text-sm cursor-not-allowed"
-              >
-                ⏰ I&apos;m up ({countdownSeconds}s)
-              </button>
-            )}
-        </div>
-
-        {/* Status Information */}
-        {destinationPosition && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-3">
-            <div className="text-sm text-gray-600">
-              <span className="font-medium">Destination:</span>{" "}
-              {destinationPosition[0].toFixed(4)},{" "}
-              {destinationPosition[1].toFixed(4)}
+          {/* Notifications toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {notificationsEnabled ? (
+                <Bell className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <BellOff className="h-4 w-4 text-muted-foreground" />
+              )}
+              <span className="text-sm text-muted-foreground">Notifications</span>
             </div>
-
-            {notificationsEnabled && (
-              <div className="text-sm">
-                {countdownSeconds > 0 ? (
-                  <span className="text-yellow-600 font-medium">
-                    ⏰ Notifications paused. Resuming in {countdownSeconds}{" "}
-                    seconds...
-                  </span>
-                ) : (
-                  <span className="text-green-600 font-medium">
-                    🔔 Notifications active
-                  </span>
-                )}
-              </div>
-            )}
+            <Switch
+              checked={notificationsEnabled}
+              onCheckedChange={setNotificationsEnabled}
+            />
           </div>
-        )}
 
-        {/* Map Container */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          {/* Notification countdown status */}
+          {destinationPosition && notificationsEnabled && (
+            <div className="text-xs text-muted-foreground">
+              {countdownSeconds > 0 ? (
+                <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                  <Clock className="h-3 w-3" />
+                  Paused — resumes in {countdownSeconds}s
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                  <Bell className="h-3 w-3" />
+                  Notifications active
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Actions */}
+      {destinationPosition && (
+        <div className="flex flex-col gap-2">
+          {/* Snooze button */}
+          {notificationsEnabled && countdownSeconds === 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLastNotificationTime(Date.now() + 300000)}
+              className="w-full justify-start gap-2 text-sm"
+            >
+              <Clock className="h-3.5 w-3.5" />
+              Snooze 5 minutes
+            </Button>
+          )}
+          {notificationsEnabled && countdownSeconds > 0 && (
+            <Button variant="outline" size="sm" disabled className="w-full justify-start gap-2 text-sm">
+              <Clock className="h-3.5 w-3.5" />
+              Snoozed ({countdownSeconds}s remaining)
+            </Button>
+          )}
+
+          {/* Reset */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={resetDestination}
+            className="w-full justify-start gap-2 text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Clear destination
+          </Button>
+        </div>
+      )}
+
+      {/* Help text */}
+      {!destinationPosition && (
+        <p className="text-xs text-muted-foreground text-center pt-2">
+          Tap anywhere on the map to set your destination
+        </p>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="h-screen flex flex-col bg-background">
+      {/* Top header bar — mobile only */}
+      <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-background">
+        <div className="flex items-center gap-2">
+          <MapPin className="h-4 w-4" />
+          <span className="font-semibold text-sm">Travel Destination</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {destinationPosition && distanceMeters !== null && (
+            <Badge variant={isNearDestination ? "destructive" : "secondary"} className="text-xs">
+              {formatDistance(distanceMeters)}
+            </Badge>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs h-7 px-2"
+            onClick={() => setIsMobilePanelOpen(!isMobilePanelOpen)}
+          >
+            {isMobilePanelOpen ? "Map" : "Controls"}
+          </Button>
+        </div>
+      </header>
+
+      {/* Desktop layout — sidebar + map */}
+      <div className="hidden md:flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <aside className="w-72 xl:w-80 border-r border-border bg-background flex-shrink-0 overflow-y-auto">
+          <SidebarContent />
+        </aside>
+
+        {/* Map */}
+        <div className="flex-1 relative">
           <MapContainer
             center={userPosition || [18.5, 73.86]}
             zoom={13}
-            scrollWheelZoom={false}
-            style={{ height: "350px", width: "100%" }}
-            className="w-full"
+            scrollWheelZoom={true}
+            style={{ height: "100%", width: "100%" }}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-
             <MapClickHandler onMapClick={handleMapClick} />
 
-            {/* User position marker */}
             {userPosition && (
               <Marker
                 position={userPosition}
-                icon={createCustomIcon(
-                  isNearDestination ? "#10B981" : "#3B82F6",
-                  "user"
-                )}
+                icon={createCustomIcon(isNearDestination ? "#10B981" : "#09090b", "user")}
+                ref={ref1}
               >
                 <Popup>
-                  <div className="text-center">
-                    <div className="font-bold text-blue-600 text-sm">
-                      Your Location
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      {userPosition[0].toFixed(4)}, {userPosition[1].toFixed(4)}
-                    </div>
+                  <div className="text-center text-xs">
+                    <div className="font-semibold">Your Location</div>
+                    <div className="text-gray-500">{userPosition[0].toFixed(4)}, {userPosition[1].toFixed(4)}</div>
                   </div>
                 </Popup>
               </Marker>
             )}
 
-            {/* Destination marker */}
             {destinationPosition && (
               <Marker
                 position={destinationPosition}
-                icon={createCustomIcon(
-                  isNearDestination ? "#EF4444" : "#8B5CF6",
-                  "destination"
-                )}
+                icon={createCustomIcon(isNearDestination ? "#ef4444" : "#71717a", "destination")}
               >
                 <Popup>
-                  <div className="text-center">
-                    <div className="font-bold text-purple-600 text-sm">
-                      Destination
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      {destinationPosition[0].toFixed(4)},{" "}
-                      {destinationPosition[1].toFixed(4)}
-                    </div>
+                  <div className="text-center text-xs">
+                    <div className="font-semibold">Destination</div>
+                    <div className="text-gray-500">{destinationPosition[0].toFixed(4)}, {destinationPosition[1].toFixed(4)}</div>
                   </div>
                 </Popup>
               </Marker>
             )}
 
-            {/* Distance circle */}
             {destinationPosition && (
               <Circle
                 center={destinationPosition}
                 radius={selectedDistance * 1000}
                 pathOptions={{
-                  color: isNearDestination ? "#EF4444" : "#8B5CF6",
-                  fillColor: isNearDestination ? "#FEE2E2" : "#EDE9FE",
-                  fillOpacity: 0.2,
-                  weight: 2,
+                  color: isNearDestination ? "#ef4444" : "#09090b",
+                  fillColor: isNearDestination ? "#fee2e2" : "#f4f4f5",
+                  fillOpacity: 0.15,
+                  weight: 1.5,
+                  dashArray: "4 4",
                 }}
               />
             )}
           </MapContainer>
-        </div>
 
-        {/* Distance Display */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <div className="text-center space-y-2">
-            <div className="text-lg font-semibold text-gray-800">
-              {destinationPosition ? (
-                <>
-                  Distance to destination:{" "}
-                  {distanceMeters !== null ? (
-                    <span
-                      className={
-                        isNearDestination
-                          ? "text-red-600 font-bold"
-                          : "text-gray-700"
-                      }
-                    >
-                      {distanceMeters >= 1000
-                        ? `${(distanceMeters / 1000).toFixed(2)} km`
-                        : `${Math.round(distanceMeters)} meters`}
-                    </span>
-                  ) : (
-                    "Calculating..."
-                  )}
-                </>
-              ) : (
-                "Click on the map to set your destination"
-              )}
-            </div>
-
-            {isNearDestination && (
-              <div className="text-red-600 font-medium text-sm">
-                🎯 You&apos;re within {selectedDistance}km of your destination!
+          {/* Map overlay hint */}
+          {!destinationPosition && (
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[999] pointer-events-none">
+              <div className="bg-background/90 backdrop-blur-sm border border-border rounded-full px-4 py-2 text-xs text-muted-foreground shadow-sm">
+                Click on the map to set your destination
               </div>
-            )}
+            </div>
+          )}
+        </div>
+      </div>
 
-            {destinationPosition && (
-              <div className="text-xs text-gray-500">
-                Notifications: {notificationsEnabled ? "ON" : "OFF"} |
-                Threshold: {selectedDistance}km
+      {/* Mobile layout */}
+      <div className="md:hidden flex flex-col flex-1 overflow-hidden">
+        {isMobilePanelOpen ? (
+          /* Controls panel */
+          <div className="flex-1 overflow-y-auto">
+            <SidebarContent />
+          </div>
+        ) : (
+          /* Map */
+          <div className="flex-1 relative">
+            <MapContainer
+              center={userPosition || [18.5, 73.86]}
+              zoom={13}
+              scrollWheelZoom={false}
+              style={{ height: "100%", width: "100%" }}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <MapClickHandler onMapClick={handleMapClick} />
+
+              {userPosition && (
+                <Marker
+                  position={userPosition}
+                  icon={createCustomIcon(isNearDestination ? "#10B981" : "#09090b", "user")}
+                >
+                  <Popup>
+                    <div className="text-center text-xs">
+                      <div className="font-semibold">Your Location</div>
+                    </div>
+                  </Popup>
+                </Marker>
+              )}
+
+              {destinationPosition && (
+                <Marker
+                  position={destinationPosition}
+                  icon={createCustomIcon(isNearDestination ? "#ef4444" : "#71717a", "destination")}
+                >
+                  <Popup>
+                    <div className="text-center text-xs">
+                      <div className="font-semibold">Destination</div>
+                    </div>
+                  </Popup>
+                </Marker>
+              )}
+
+              {destinationPosition && (
+                <Circle
+                  center={destinationPosition}
+                  radius={selectedDistance * 1000}
+                  pathOptions={{
+                    color: isNearDestination ? "#ef4444" : "#09090b",
+                    fillColor: isNearDestination ? "#fee2e2" : "#f4f4f5",
+                    fillOpacity: 0.15,
+                    weight: 1.5,
+                    dashArray: "4 4",
+                  }}
+                />
+              )}
+            </MapContainer>
+
+            {/* Mobile hint overlay */}
+            {!destinationPosition && (
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[999] pointer-events-none">
+                <div className="bg-background/90 backdrop-blur-sm border border-border rounded-full px-4 py-2 text-xs text-muted-foreground shadow-sm">
+                  Tap on the map to set destination
+                </div>
               </div>
             )}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

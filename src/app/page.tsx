@@ -5,8 +5,8 @@ const Map = dynamic(() => import("@/components/Map"), { ssr: false });
 
 export default function Home() {
   return (
-    <div className="w-full h-screen flex justify-center items-center px-5">
+    <main className="h-screen w-full overflow-hidden bg-background">
       <Map />
-    </div>
+    </main>
   );
 }
