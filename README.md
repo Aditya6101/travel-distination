@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🗺️ Travel Destination
+
+A minimal, real-time proximity alert app built with **Next.js 16** and **shadcn/ui**. Set a destination on the map, and get notified when you're within a chosen radius.
+
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
+![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-zinc-black)
+![Leaflet](https://img.shields.io/badge/Leaflet-1.9-green?logo=leaflet)
+
+---
+
+## Features
+
+- **📍 Live location tracking** — uses the browser Geolocation API with `watchPosition` for continuous updates
+- **🗺️ Interactive map** — click anywhere to drop a destination pin
+- **📏 Proximity alerts** — browser push notifications when you enter the alert radius (2–20 km)
+- **🔔 Notification controls** — toggle alerts on/off or snooze for 5 minutes
+- **🎨 Map style switcher** — switch between three CartoDB tile styles:
+  - **Light** (Positron) — ultra-minimal, matches the app theme
+  - **Dark** (Dark Matter) — jet black, great for night use
+  - **Voyager** — road-focused, clean modern style
+- **📱 Responsive layout** — sidebar + map split on desktop; full-screen map with a Controls toggle on mobile
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | [Next.js 16](https://nextjs.org) (App Router) |
+| Language | TypeScript 5 |
+| UI Components | [shadcn/ui](https://ui.shadcn.com) (zinc / Vercel theme) |
+| Styling | Tailwind CSS v4 |
+| Map | [React Leaflet](https://react-leaflet.js.org) + [Leaflet.js](https://leafletjs.com) |
+| Map Tiles | [CartoDB](https://carto.com) (Positron, Dark Matter, Voyager) |
+| Icons | [Lucide React](https://lucide.dev) |
+| Font | [Geist](https://vercel.com/font) (via `next/font`) |
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+
+- npm
+
+### Install & Run
 
 ```bash
+# Clone the repo
+git clone https://github.com/Aditya6101/travel-distination.git
+cd travel-distination
+
+# Install dependencies
+npm install
+
+# Start the dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> **Note:** The app will request Geolocation and Notification permissions on first load. Both are required for full functionality.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Usage
 
-To learn more about Next.js, take a look at the following resources:
+1. **Allow location access** when prompted
+2. **Click on the map** to set your destination pin
+3. **Set the alert radius** using the dropdown (2–20 km)
+4. **Toggle notifications** on/off with the switch
+5. **Switch map style** with the Light / Dark / Voyager segmented control
+6. **Snooze** alerts for 5 minutes using the snooze button
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+```
+src/
+├── app/
+│   ├── globals.css        # shadcn CSS variables (zinc theme)
+│   ├── layout.tsx         # Root layout with Geist font
+│   └── page.tsx           # Entry page
+├── components/
+│   ├── Map.tsx            # Main map component (all logic + UI)
+│   └── ui/                # shadcn/ui components
+│       ├── badge.tsx
+│       ├── button.tsx
+│       ├── card.tsx
+│       ├── select.tsx
+│       ├── separator.tsx
+│       └── switch.tsx
+└── lib/
+    └── utils.ts           # cn() utility helper
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT
