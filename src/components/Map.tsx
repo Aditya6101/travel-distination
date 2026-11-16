@@ -13,22 +13,26 @@ import type { Marker as LeafletMarker } from "leaflet";
 import L from "leaflet";
 import { MapPin, Bell, BellOff, Trash2, Navigation, Clock, Map as MapIcon } from "lucide-react";
 
-// Tile style config
+// Tile style config — all free, no API key required
+// Dark style achieved via CSS filter on the tile pane (OSM only has light tiles)
 const TILE_STYLES = {
   light: {
     label: "Light",
-    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    darkFilter: false,
   },
   dark: {
     label: "Dark",
-    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    darkFilter: true,
   },
   road: {
     label: "Voyager",
-    url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    url: "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles &copy; <a href="https://hot.openstreetmap.org/">HOT</a>',
+    darkFilter: false,
   },
 } as const;
 
@@ -484,7 +488,7 @@ const Map = () => {
         </aside>
 
         {/* Map */}
-        <div className="flex-1 relative">
+        <div className={`flex-1 relative${TILE_STYLES[tileStyle].darkFilter ? " map-dark" : ""}`}>
           <MapContainer
             center={userPosition || [18.5, 73.86]}
             zoom={13}
@@ -561,7 +565,7 @@ const Map = () => {
           </div>
         ) : (
           /* Map */
-          <div className="flex-1 relative">
+          <div className={`flex-1 relative${TILE_STYLES[tileStyle].darkFilter ? " map-dark" : ""}`}>
             <MapContainer
               center={userPosition || [18.5, 73.86]}
               zoom={13}

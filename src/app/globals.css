@@ -108,3 +108,8 @@ body {
     transform: scale(0.98);
   }
 }
+
+/* Dark map tile filter — inverts OSM tiles to create a dark style */
+.map-dark .leaflet-tile-pane {
+  filter: invert(100%) hue-rotate(180deg) brightness(0.95) contrast(0.9);
+}
